@@ -92,7 +92,8 @@ private fun AppNavigation(modifier: Modifier = Modifier) {
 
             ScreenContent(
                 screenName = "Screen A",
-                onNavigateForward = { navController.navigate("screenB") }
+                onNavigateForward = { navController.navigate("screenB") },
+                onShowTimeline = { navController.navigate("timeline") }
             )
         }
 

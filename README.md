@@ -1,7 +1,5 @@
 # NavBackStackEntry Lifecycle
 
-## Intro
-
 Example project to understand and compare the lifecycles of Application, MainActivity and NavBackStackEntry
 
 ## Notes

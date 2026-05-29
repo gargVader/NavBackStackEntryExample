@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Android Lifecycle Flowchart</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: #f5f5f0;
+    color: #1a1a2e;
+    padding: 40px 20px 80px;
+  }
+
+  h1 { text-align: center; font-size: 1.8rem; font-weight: 700; margin-bottom: 6px; }
+  .page-sub { text-align: center; color: #666; font-size: 0.95rem; margin-bottom: 40px; }
+
+  /* ---- Tabs ---- */
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    position: sticky;
+    top: 0;
+    background: #f5f5f0;
+    padding: 12px 0;
+    z-index: 100;
+    border-bottom: 1px solid #ddd;
+  }
+  .tab {
+    padding: 8px 18px;
+    border: 1.5px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    color: #555;
+    transition: all 0.15s;
+  }
+  .tab:hover { border-color: #888; color: #222; }
+  .tab.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+
+  /* ---- Chart ---- */
+  .chart { max-width: 880px; margin: 0 auto; }
+
+  /* Column headers */
+  .col-headers {
+    display: grid;
+    grid-template-columns: 40px 1fr 1fr 1fr;
+    gap: 12px;
+    position: sticky;
+    top: 56px;
+    background: #f5f5f0;
+    z-index: 99;
+    padding-bottom: 10px;
+  }
+  .col-num-head { /* empty corner */ }
+  .col-head {
+    text-align: center;
+    padding: 12px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .col-head small { display: block; font-weight: 400; font-size: 10px; margin-top: 2px; opacity: 0.7; }
+  .col-head.h-app { background: #dbeafe; color: #1e40af; border: 2px solid #93c5fd; }
+  .col-head.h-act { background: #ede9fe; color: #5b21b6; border: 2px solid #c4b5fd; }
+  .col-head.h-nav { background: #d1fae5; color: #065f46; border: 2px solid #6ee7b7; }
+
+  /* ---- Event trigger banner ---- */
+  .trigger {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 28px 0 14px;
+  }
+  .trigger-line { flex: 1; height: 1.5px; background: linear-gradient(90deg, transparent, #c44, transparent); }
+  .trigger-label {
+    padding: 6px 20px;
+    background: #1a1a2e;
+    color: #fff;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* ---- Flow rows ---- */
+  .flow-row {
+    display: grid;
+    grid-template-columns: 40px 1fr 1fr 1fr;
+    gap: 12px;
+    align-items: center;
+    min-height: 44px;
+    position: relative;
+  }
+  /* Dashed lifelines behind the grid */
+  .flow-rows-container {
+    position: relative;
+  }
+  .flow-rows-container::before,
+  .flow-rows-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1.5px;
+    background: repeating-linear-gradient(to bottom, #d0d0d0 0 5px, transparent 5px 10px);
+    z-index: 0;
+  }
+  /* Position lifelines at column centers (40px + gap + column widths) */
+  .flow-rows-container::before { left: calc(40px + 12px + (100% - 40px - 36px) / 6); }
+  .flow-rows-container::after { left: calc(40px + 24px + (100% - 40px - 36px) / 2); }
+  .flow-rows-container .lifeline-3 {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1.5px;
+    background: repeating-linear-gradient(to bottom, #d0d0d0 0 5px, transparent 5px 10px);
+    left: calc(40px + 36px + 5 * (100% - 40px - 36px) / 6);
+    z-index: 0;
+  }
+
+  /* Row number */
+  .row-num {
+    font-size: 11px;
+    font-weight: 600;
+    color: #bbb;
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Cell */
+  .flow-cell {
+    display: flex;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    padding: 3px 0;
+  }
+
+  /* Callback box */
+  .cb {
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    border: 1.5px solid;
+    width: 100%;
+    max-width: 210px;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .cb:hover { transform: scale(1.03); box-shadow: 0 3px 12px rgba(0,0,0,0.08); }
+  .cb.cb-app { background: #eff6ff; border-color: #93c5fd; color: #1e40af; }
+  .cb.cb-act { background: #f5f3ff; border-color: #c4b5fd; color: #5b21b6; }
+  .cb.cb-nav { background: #ecfdf5; border-color: #6ee7b7; color: #065f46; }
+  .cb .target { display: block; font-size: 10px; font-weight: 400; opacity: 0.6; font-family: 'IBM Plex Sans', sans-serif; margin-top: 1px; }
+
+  /* Note box */
+  .note {
+    font-size: 10px;
+    font-weight: 600;
+    font-style: italic;
+    color: #c44;
+    text-align: center;
+    padding: 5px 10px;
+    background: #fff5f5;
+    border: 1px dashed #fca5a5;
+    border-radius: 5px;
+    max-width: 210px;
+    width: 100%;
+    line-height: 1.4;
+    white-space: pre-line;
+  }
+
+  /* No-change indicator */
+  .no-change {
+    font-size: 11px;
+    color: #aaa;
+    font-style: italic;
+    text-align: center;
+    padding: 2px 0;
+  }
+
+  /* ---- Down arrow ---- */
+  .arrow-row {
+    display: grid;
+    grid-template-columns: 40px 1fr 1fr 1fr;
+    gap: 12px;
+    min-height: 16px;
+  }
+  .arrow-cell { display: flex; justify-content: center; }
+  .arrow-stem {
+    width: 1.5px;
+    height: 14px;
+    background: #aaa;
+    position: relative;
+  }
+  .arrow-stem::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid #aaa;
+  }
+
+  /* ---- Final states ---- */
+  .finals {
+    display: grid;
+    grid-template-columns: 40px 1fr 1fr 1fr;
+    gap: 12px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 2px dashed #ddd;
+  }
+  .final-cell { text-align: center; }
+  .final-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 4px; }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    white-space: pre-line;
+    line-height: 1.5;
+  }
+  .badge.st-resumed  { background: #d1fae5; color: #065f46; }
+  .badge.st-started  { background: #fef3c7; color: #92400e; }
+  .badge.st-created  { background: #ffedd5; color: #9a3412; }
+  .badge.st-destroyed { background: #fee2e2; color: #991b1b; }
+  .badge.st-alive    { background: #dbeafe; color: #1e40af; }
+
+  @media (max-width: 640px) {
+    .chart { max-width: 100%; }
+    .col-headers, .flow-row, .arrow-row, .finals { grid-template-columns: 28px 1fr 1fr 1fr; gap: 6px; }
+    .cb { font-size: 10px; padding: 5px 6px; }
+    .col-head { font-size: 11px; padding: 8px 4px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Android Lifecycle Flowchart</h1>
+<p class="page-sub">Application vs Activity vs NavBackStackEntry &mdash; one callback per row, top to bottom</p>
+
+<div class="tabs" id="tabs"></div>
+
+<div class="chart">
+  <div class="col-headers">
+    <div class="col-num-head"></div>
+    <div class="col-head h-app">Application<small>ProcessLifecycleOwner</small></div>
+    <div class="col-head h-act">Activity<small>ComponentActivity</small></div>
+    <div class="col-head h-nav">NavBackStackEntry<small>Per-destination</small></div>
+  </div>
+  <div id="diagram"></div>
+</div>
+
+<script>
+// Each event is { lane: 'app'|'act'|'nav', cb, target? }
+// or { lane: 'note', text } for callout notes
+const scenarios = [
+  {
+    tab: 'App Launch',
+    trigger: 'App Launch \u2014 land on Screen A',
+    events: [
+      { lane:'app', cb:'onCreate' },
+      { lane:'act', cb:'onCreate' },
+      { lane:'act', cb:'onStart' },
+      { lane:'app', cb:'onStart' },
+      { lane:'nav', cb:'onCreate', target:'Entry(A)' },
+      { lane:'nav', cb:'onStart', target:'Entry(A)' },
+      { lane:'act', cb:'onResume' },
+      { lane:'app', cb:'onResume' },
+      { lane:'nav', cb:'onResume', target:'Entry(A)' },
+    ],
+    finals: [['alive','ALIVE'], ['resumed','RESUMED'], ['resumed','Entry(A) RESUMED']],
+  },
+  {
+    tab: 'A \u2192 B',
+    trigger: 'navigate("screenB") \u2014 full-screen destination',
+    events: [
+      { lane:'nav', cb:'onPause', target:'Entry(A)' },
+      { lane:'nav', cb:'onCreate', target:'Entry(B)' },
+      { lane:'nav', cb:'onStart', target:'Entry(B)' },
+      { lane:'nav', cb:'onResume', target:'Entry(B)' },
+      { lane:'nav', cb:'onStop', target:'Entry(A)' },
+    ],
+    noChange: ['app', 'act'],
+    finals: [['alive','ALIVE'], ['resumed','RESUMED'], ['resumed','Entry(B) RESUMED\nEntry(A) CREATED']],
+  },
+  {
+    tab: 'Back B\u2192A',
+    trigger: 'Press Back \u2014 pop Screen B',
+    events: [
+      { lane:'nav', cb:'onPause', target:'Entry(B)' },
+      { lane:'nav', cb:'onStart', target:'Entry(A)' },
+      { lane:'nav', cb:'onResume', target:'Entry(A)' },
+      { lane:'nav', cb:'onStop', target:'Entry(B)' },
+      { lane:'nav', cb:'onDestroy', target:'Entry(B)' },
+    ],
+    noChange: ['app', 'act'],
+    finals: [['alive','ALIVE'], ['resumed','RESUMED'], ['resumed','Entry(A) RESUMED\nEntry(B) DESTROYED']],
+  },
+  {
+    tab: 'Open Dialog',
+    trigger: 'navigate("dialog") \u2014 FloatingWindow from Screen A',
+    events: [
+      { lane:'nav', cb:'onPause', target:'Entry(A)' },
+      { lane:'note', text:'A drops to STARTED only\u2014still visible behind dialog!' },
+      { lane:'nav', cb:'onCreate', target:'Entry(Dlg)' },
+      { lane:'nav', cb:'onStart', target:'Entry(Dlg)' },
+      { lane:'nav', cb:'onResume', target:'Entry(Dlg)' },
+    ],
+    noChange: ['app', 'act'],
+    finals: [['alive','ALIVE'], ['resumed','RESUMED'], ['started','Entry(Dlg) RESUMED\nEntry(A) STARTED']],
+  },
+  {
+    tab: 'Dismiss Dlg',
+    trigger: 'popBackStack() \u2014 dismiss dialog, return to A',
+    events: [
+      { lane:'nav', cb:'onPause', target:'Entry(Dlg)' },
+      { lane:'nav', cb:'onResume', target:'Entry(A)' },
+      { lane:'nav', cb:'onStop', target:'Entry(Dlg)' },
+      { lane:'nav', cb:'onDestroy', target:'Entry(Dlg)' },
+    ],
+    noChange: ['app', 'act'],
+    finals: [['alive','ALIVE'], ['resumed','RESUMED'], ['resumed','Entry(A) RESUMED\nEntry(Dlg) DESTROYED']],
+  },
+  {
+    tab: 'Press Home',
+    trigger: 'Press Home \u2014 app goes to background',
+    events: [
+      { lane:'act', cb:'onPause' },
+      { lane:'nav', cb:'onPause', target:'Entry(A)' },
+      { lane:'act', cb:'onStop' },
+      { lane:'nav', cb:'onStop', target:'Entry(A)' },
+      { lane:'app', cb:'onPause' },
+      { lane:'app', cb:'onStop' },
+    ],
+    finals: [['alive','ALIVE'], ['created','CREATED'], ['created','Entry(A) CREATED']],
+  },
+  {
+    tab: 'Return to App',
+    trigger: 'Return from background \u2014 foreground',
+    events: [
+      { lane:'act', cb:'onRestart' },
+      { lane:'act', cb:'onStart' },
+      { lane:'app', cb:'onStart' },
+      { lane:'nav', cb:'onStart', target:'Entry(A)' },
+      { lane:'act', cb:'onResume' },
+      { lane:'app', cb:'onResume' },
+      { lane:'nav', cb:'onResume', target:'Entry(A)' },
+    ],
+    finals: [['alive','ALIVE'], ['resumed','RESUMED'], ['resumed','Entry(A) RESUMED']],
+  },
+  {
+    tab: 'App Kill',
+    trigger: 'Finish Activity \u2014 app process terminates',
+    events: [
+      { lane:'act', cb:'onPause' },
+      { lane:'nav', cb:'onPause', target:'Entry(A)' },
+      { lane:'act', cb:'onStop' },
+      { lane:'nav', cb:'onStop', target:'Entry(A)' },
+      { lane:'nav', cb:'onDestroy', target:'Entry(A)' },
+      { lane:'act', cb:'onDestroy' },
+      { lane:'app', cb:'onPause' },
+      { lane:'app', cb:'onStop' },
+      { lane:'note', text:'Process killed \u2014 no further callbacks guaranteed' },
+    ],
+    finals: [['destroyed','TERMINATED'], ['destroyed','DESTROYED'], ['destroyed','Entry(A) DESTROYED']],
+  },
+];
+
+let active = 0;
+
+function buildTabs() {
+  document.getElementById('tabs').innerHTML = scenarios.map((s, i) =>
+    `<button class="tab${i===active?' active':''}" onclick="sel(${i})">${s.tab}</button>`
+  ).join('');
+}
+
+function render() {
+  const s = scenarios[active];
+  const noChange = s.noChange || [];
+  let html = '';
+
+  // Trigger banner
+  html += `<div class="trigger"><div class="trigger-line"></div><div class="trigger-label">${s.trigger}</div><div class="trigger-line"></div></div>`;
+
+  // No-change row (if applicable)
+  if (noChange.length) {
+    html += '<div class="flow-row" style="min-height:32px; margin-bottom:4px;">';
+    html += '<div></div>'; // row-num col
+    html += `<div class="flow-cell">${noChange.includes('app') ? '<div class="no-change">no change</div>' : ''}</div>`;
+    html += `<div class="flow-cell">${noChange.includes('act') ? '<div class="no-change">no change</div>' : ''}</div>`;
+    html += '<div class="flow-cell"></div>';
+    html += '</div>';
+  }
+
+  // Flow rows container (with lifelines)
+  html += '<div class="flow-rows-container"><div class="lifeline-3"></div>';
+
+  const colMap = { app: 1, act: 2, nav: 3 };
+  const clsMap = { app: 'cb-app', act: 'cb-act', nav: 'cb-nav' };
+
+  // Track which columns had their last event, for arrows
+  const lastEventInCol = {};
+
+  s.events.forEach((ev, i) => {
+    // Arrow row before this event (connect to previous event in same column)
+    if (ev.lane !== 'note' && lastEventInCol[ev.lane] !== undefined) {
+      html += '<div class="arrow-row">';
+      html += '<div></div>';
+      for (let c = 1; c <= 3; c++) {
+        const colKey = ['app','act','nav'][c-1];
+        html += `<div class="arrow-cell">${colKey === ev.lane ? '<div class="arrow-stem"></div>' : ''}</div>`;
+      }
+      html += '</div>';
+    }
+
+    // The event row
+    html += '<div class="flow-row">';
+    html += `<div class="row-num">${ev.lane === 'note' ? '' : i + 1}</div>`;
+
+    if (ev.lane === 'note') {
+      // Note spans the nav column
+      html += '<div class="flow-cell"></div><div class="flow-cell"></div>';
+      html += `<div class="flow-cell"><div class="note">${ev.text}</div></div>`;
+    } else {
+      for (let c = 1; c <= 3; c++) {
+        const colKey = ['app','act','nav'][c-1];
+        if (colKey === ev.lane) {
+          const tgt = ev.target ? `<span class="target">${ev.target}</span>` : '';
+          html += `<div class="flow-cell"><div class="cb ${clsMap[ev.lane]}">${ev.cb}${tgt}</div></div>`;
+        } else {
+          html += '<div class="flow-cell"></div>';
+        }
+      }
+    }
+    html += '</div>';
+
+    if (ev.lane !== 'note') lastEventInCol[ev.lane] = i;
+  });
+
+  html += '</div>'; // close flow-rows-container
+
+  // Final states
+  html += '<div class="finals"><div></div>';
+  s.finals.forEach(([st, label]) => {
+    html += `<div class="final-cell"><div class="final-lbl">resulting state</div><div class="badge st-${st}">${label}</div></div>`;
+  });
+  html += '</div>';
+
+  document.getElementById('diagram').innerHTML = html;
+}
+
+function sel(i) { active = i; buildTabs(); render(); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' && active < scenarios.length - 1) sel(active + 1);
+  if (e.key === 'ArrowLeft' && active > 0) sel(active - 1);
+});
+
+buildTabs();
+render();
+</script>
+</body>
+</html>
