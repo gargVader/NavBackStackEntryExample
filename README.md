@@ -1,6 +1,7 @@
 # NavBackStackEntry Lifecycle
 
-Example project to understand and compare the lifecycles of Application, MainActivity and NavBackStackEntry
+Example project to understand and compare the lifecycles of Application, MainActivity and NavBackStackEntry.
+Visualization: https://gargvader.github.io/NavBackStackEntryExample/
 
 ## Notes
 
