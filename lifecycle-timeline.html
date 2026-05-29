@@ -18,35 +18,6 @@
   h1 { text-align: center; font-size: 1.8rem; font-weight: 700; margin-bottom: 6px; }
   .page-sub { text-align: center; color: #666; font-size: 0.95rem; margin-bottom: 40px; }
 
-  /* ---- Tabs ---- */
-  .tabs {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
-    position: sticky;
-    top: 0;
-    background: #f5f5f0;
-    padding: 12px 0;
-    z-index: 100;
-    border-bottom: 1px solid #ddd;
-  }
-  .tab {
-    padding: 8px 18px;
-    border: 1.5px solid #ccc;
-    border-radius: 6px;
-    background: #fff;
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    color: #555;
-    transition: all 0.15s;
-  }
-  .tab:hover { border-color: #888; color: #222; }
-  .tab.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
-
   /* ---- Chart ---- */
   .chart { max-width: 880px; margin: 0 auto; }
 
@@ -56,10 +27,10 @@
     grid-template-columns: 40px 1fr 1fr 1fr;
     gap: 12px;
     position: sticky;
-    top: 56px;
+    top: 0;
     background: #f5f5f0;
     z-index: 99;
-    padding-bottom: 10px;
+    padding: 10px 0;
   }
   .col-num-head { /* empty corner */ }
   .col-head {
@@ -259,8 +230,6 @@
 <h1>Android Lifecycle Flowchart</h1>
 <p class="page-sub">Application vs Activity vs NavBackStackEntry &mdash; one callback per row, top to bottom</p>
 
-<div class="tabs" id="tabs"></div>
-
 <div class="chart">
   <div class="col-headers">
     <div class="col-num-head"></div>
@@ -283,10 +252,11 @@ const scenarios = [
       { lane:'act', cb:'onCreate' },
       { lane:'act', cb:'onStart' },
       { lane:'app', cb:'onStart' },
-      { lane:'nav', cb:'onCreate', target:'Entry(A)' },
-      { lane:'nav', cb:'onStart', target:'Entry(A)' },
       { lane:'act', cb:'onResume' },
       { lane:'app', cb:'onResume' },
+      { lane:'note', text:'Activity & App fully resumed before NavBackStackEntry starts' },
+      { lane:'nav', cb:'onCreate', target:'Entry(A)' },
+      { lane:'nav', cb:'onStart', target:'Entry(A)' },
       { lane:'nav', cb:'onResume', target:'Entry(A)' },
     ],
     finals: [['alive','ALIVE'], ['resumed','RESUMED'], ['resumed','Entry(A) RESUMED']],
@@ -296,10 +266,11 @@ const scenarios = [
     trigger: 'navigate("screenB") \u2014 full-screen destination',
     events: [
       { lane:'nav', cb:'onPause', target:'Entry(A)' },
+      { lane:'nav', cb:'onStop', target:'Entry(A)' },
+      { lane:'note', text:'A fully stopped before B starts \u2014 A is now in CREATED state' },
       { lane:'nav', cb:'onCreate', target:'Entry(B)' },
       { lane:'nav', cb:'onStart', target:'Entry(B)' },
       { lane:'nav', cb:'onResume', target:'Entry(B)' },
-      { lane:'nav', cb:'onStop', target:'Entry(A)' },
     ],
     noChange: ['app', 'act'],
     finals: [['alive','ALIVE'], ['resumed','RESUMED'], ['resumed','Entry(B) RESUMED\nEntry(A) CREATED']],
@@ -309,49 +280,51 @@ const scenarios = [
     trigger: 'Press Back \u2014 pop Screen B',
     events: [
       { lane:'nav', cb:'onPause', target:'Entry(B)' },
+      { lane:'nav', cb:'onStop', target:'Entry(B)' },
+      { lane:'note', text:'B fully stopped. Observer re-attaches to A \u2014 sees onCreate catchup from CREATED state' },
+      { lane:'nav', cb:'onCreate', target:'Entry(A)' },
       { lane:'nav', cb:'onStart', target:'Entry(A)' },
       { lane:'nav', cb:'onResume', target:'Entry(A)' },
-      { lane:'nav', cb:'onStop', target:'Entry(B)' },
-      { lane:'nav', cb:'onDestroy', target:'Entry(B)' },
     ],
     noChange: ['app', 'act'],
     finals: [['alive','ALIVE'], ['resumed','RESUMED'], ['resumed','Entry(A) RESUMED\nEntry(B) DESTROYED']],
   },
   {
     tab: 'Open Dialog',
-    trigger: 'navigate("dialog") \u2014 FloatingWindow from Screen A',
+    trigger: 'navigate("dialog") \u2014 FloatingWindow from Screen B',
     events: [
-      { lane:'nav', cb:'onPause', target:'Entry(A)' },
-      { lane:'note', text:'A drops to STARTED only\u2014still visible behind dialog!' },
+      { lane:'nav', cb:'onPause', target:'Entry(B)' },
+      { lane:'note', text:'B drops to STARTED only \u2014 no onStop! Still visible behind dialog' },
       { lane:'nav', cb:'onCreate', target:'Entry(Dlg)' },
       { lane:'nav', cb:'onStart', target:'Entry(Dlg)' },
       { lane:'nav', cb:'onResume', target:'Entry(Dlg)' },
     ],
     noChange: ['app', 'act'],
-    finals: [['alive','ALIVE'], ['resumed','RESUMED'], ['started','Entry(Dlg) RESUMED\nEntry(A) STARTED']],
+    finals: [['alive','ALIVE'], ['resumed','RESUMED'], ['started','Entry(Dlg) RESUMED\nEntry(B) STARTED']],
   },
   {
     tab: 'Dismiss Dlg',
-    trigger: 'popBackStack() \u2014 dismiss dialog, return to A',
+    trigger: 'popBackStack() \u2014 dismiss dialog, return to B',
     events: [
       { lane:'nav', cb:'onPause', target:'Entry(Dlg)' },
-      { lane:'nav', cb:'onResume', target:'Entry(A)' },
       { lane:'nav', cb:'onStop', target:'Entry(Dlg)' },
-      { lane:'nav', cb:'onDestroy', target:'Entry(Dlg)' },
+      { lane:'note', text:'Dialog fully stopped before B resumes' },
+      { lane:'nav', cb:'onResume', target:'Entry(B)' },
     ],
     noChange: ['app', 'act'],
-    finals: [['alive','ALIVE'], ['resumed','RESUMED'], ['resumed','Entry(A) RESUMED\nEntry(Dlg) DESTROYED']],
+    finals: [['alive','ALIVE'], ['resumed','RESUMED'], ['resumed','Entry(B) RESUMED\nEntry(Dlg) DESTROYED']],
   },
   {
     tab: 'Press Home',
     trigger: 'Press Home \u2014 app goes to background',
     events: [
-      { lane:'act', cb:'onPause' },
       { lane:'nav', cb:'onPause', target:'Entry(A)' },
-      { lane:'act', cb:'onStop' },
-      { lane:'nav', cb:'onStop', target:'Entry(A)' },
+      { lane:'act', cb:'onPause' },
       { lane:'app', cb:'onPause' },
+      { lane:'note', text:'All three paused. Now stop phase begins.' },
+      { lane:'nav', cb:'onStop', target:'Entry(A)' },
       { lane:'app', cb:'onStop' },
+      { lane:'act', cb:'onStop' },
     ],
     finals: [['alive','ALIVE'], ['created','CREATED'], ['created','Entry(A) CREATED']],
   },
@@ -371,114 +344,100 @@ const scenarios = [
   },
   {
     tab: 'App Kill',
-    trigger: 'Finish Activity \u2014 app process terminates',
+    trigger: 'Finish Activity \u2014 back on last screen',
     events: [
-      { lane:'act', cb:'onPause' },
       { lane:'nav', cb:'onPause', target:'Entry(A)' },
-      { lane:'act', cb:'onStop' },
+      { lane:'act', cb:'onPause' },
       { lane:'nav', cb:'onStop', target:'Entry(A)' },
+      { lane:'act', cb:'onStop' },
       { lane:'nav', cb:'onDestroy', target:'Entry(A)' },
       { lane:'act', cb:'onDestroy' },
-      { lane:'app', cb:'onPause' },
-      { lane:'app', cb:'onStop' },
-      { lane:'note', text:'Process killed \u2014 no further callbacks guaranteed' },
+      { lane:'note', text:'No Application callbacks \u2014 process killed after Activity destroyed' },
     ],
-    finals: [['destroyed','TERMINATED'], ['destroyed','DESTROYED'], ['destroyed','Entry(A) DESTROYED']],
+    finals: [['alive','TERMINATED'], ['destroyed','DESTROYED'], ['destroyed','Entry(A) DESTROYED']],
   },
 ];
 
-let active = 0;
+const clsMap = { app: 'cb-app', act: 'cb-act', nav: 'cb-nav' };
+let rowCounter = 0;
 
-function buildTabs() {
-  document.getElementById('tabs').innerHTML = scenarios.map((s, i) =>
-    `<button class="tab${i===active?' active':''}" onclick="sel(${i})">${s.tab}</button>`
-  ).join('');
-}
-
-function render() {
-  const s = scenarios[active];
-  const noChange = s.noChange || [];
+function renderAll() {
+  const el = document.getElementById('diagram');
   let html = '';
+  rowCounter = 0;
 
-  // Trigger banner
-  html += `<div class="trigger"><div class="trigger-line"></div><div class="trigger-label">${s.trigger}</div><div class="trigger-line"></div></div>`;
-
-  // No-change row (if applicable)
-  if (noChange.length) {
-    html += '<div class="flow-row" style="min-height:32px; margin-bottom:4px;">';
-    html += '<div></div>'; // row-num col
-    html += `<div class="flow-cell">${noChange.includes('app') ? '<div class="no-change">no change</div>' : ''}</div>`;
-    html += `<div class="flow-cell">${noChange.includes('act') ? '<div class="no-change">no change</div>' : ''}</div>`;
-    html += '<div class="flow-cell"></div>';
-    html += '</div>';
-  }
-
-  // Flow rows container (with lifelines)
+  // Global lifelines container wrapping everything
   html += '<div class="flow-rows-container"><div class="lifeline-3"></div>';
 
-  const colMap = { app: 1, act: 2, nav: 3 };
-  const clsMap = { app: 'cb-app', act: 'cb-act', nav: 'cb-nav' };
+  scenarios.forEach((s) => {
+    const noChange = s.noChange || [];
 
-  // Track which columns had their last event, for arrows
-  const lastEventInCol = {};
+    // Trigger banner
+    html += `<div class="trigger"><div class="trigger-line"></div><div class="trigger-label">${s.trigger}</div><div class="trigger-line"></div></div>`;
 
-  s.events.forEach((ev, i) => {
-    // Arrow row before this event (connect to previous event in same column)
-    if (ev.lane !== 'note' && lastEventInCol[ev.lane] !== undefined) {
-      html += '<div class="arrow-row">';
+    // No-change indicators
+    if (noChange.length) {
+      html += '<div class="flow-row" style="min-height:32px; margin-bottom:4px;">';
       html += '<div></div>';
-      for (let c = 1; c <= 3; c++) {
-        const colKey = ['app','act','nav'][c-1];
-        html += `<div class="arrow-cell">${colKey === ev.lane ? '<div class="arrow-stem"></div>' : ''}</div>`;
-      }
+      html += `<div class="flow-cell">${noChange.includes('app') ? '<div class="no-change">no change</div>' : ''}</div>`;
+      html += `<div class="flow-cell">${noChange.includes('act') ? '<div class="no-change">no change</div>' : ''}</div>`;
+      html += '<div class="flow-cell"></div>';
       html += '</div>';
     }
 
-    // The event row
-    html += '<div class="flow-row">';
-    html += `<div class="row-num">${ev.lane === 'note' ? '' : i + 1}</div>`;
+    // Track arrows per column within this scenario
+    const lastInCol = {};
 
-    if (ev.lane === 'note') {
-      // Note spans the nav column
-      html += '<div class="flow-cell"></div><div class="flow-cell"></div>';
-      html += `<div class="flow-cell"><div class="note">${ev.text}</div></div>`;
-    } else {
-      for (let c = 1; c <= 3; c++) {
-        const colKey = ['app','act','nav'][c-1];
-        if (colKey === ev.lane) {
-          const tgt = ev.target ? `<span class="target">${ev.target}</span>` : '';
-          html += `<div class="flow-cell"><div class="cb ${clsMap[ev.lane]}">${ev.cb}${tgt}</div></div>`;
-        } else {
-          html += '<div class="flow-cell"></div>';
+    s.events.forEach((ev) => {
+      // Arrow connecting to previous event in same column
+      if (ev.lane !== 'note' && lastInCol[ev.lane] !== undefined) {
+        html += '<div class="arrow-row"><div></div>';
+        for (let c = 0; c < 3; c++) {
+          const colKey = ['app','act','nav'][c];
+          html += `<div class="arrow-cell">${colKey === ev.lane ? '<div class="arrow-stem"></div>' : ''}</div>`;
+        }
+        html += '</div>';
+      }
+
+      rowCounter++;
+
+      // Event row
+      html += '<div class="flow-row">';
+      html += `<div class="row-num">${ev.lane === 'note' ? '' : rowCounter}</div>`;
+
+      if (ev.lane === 'note') {
+        html += '<div class="flow-cell"></div><div class="flow-cell"></div>';
+        html += `<div class="flow-cell"><div class="note">${ev.text}</div></div>`;
+      } else {
+        for (let c = 0; c < 3; c++) {
+          const colKey = ['app','act','nav'][c];
+          if (colKey === ev.lane) {
+            const tgt = ev.target ? `<span class="target">${ev.target}</span>` : '';
+            html += `<div class="flow-cell"><div class="cb ${clsMap[ev.lane]}">${ev.cb}${tgt}</div></div>`;
+          } else {
+            html += '<div class="flow-cell"></div>';
+          }
         }
       }
-    }
-    html += '</div>';
+      html += '</div>';
 
-    if (ev.lane !== 'note') lastEventInCol[ev.lane] = i;
+      if (ev.lane !== 'note') lastInCol[ev.lane] = true;
+    });
+
+    // Final states
+    html += '<div class="finals"><div></div>';
+    s.finals.forEach(([st, label]) => {
+      html += `<div class="final-cell"><div class="final-lbl">resulting state</div><div class="badge st-${st}">${label}</div></div>`;
+    });
+    html += '</div>';
   });
 
   html += '</div>'; // close flow-rows-container
 
-  // Final states
-  html += '<div class="finals"><div></div>';
-  s.finals.forEach(([st, label]) => {
-    html += `<div class="final-cell"><div class="final-lbl">resulting state</div><div class="badge st-${st}">${label}</div></div>`;
-  });
-  html += '</div>';
-
-  document.getElementById('diagram').innerHTML = html;
+  el.innerHTML = html;
 }
 
-function sel(i) { active = i; buildTabs(); render(); }
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowRight' && active < scenarios.length - 1) sel(active + 1);
-  if (e.key === 'ArrowLeft' && active > 0) sel(active - 1);
-});
-
-buildTabs();
-render();
+renderAll();
 </script>
 </body>
 </html>
