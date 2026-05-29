@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -25,6 +28,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
 import com.example.navbackstackentryexample.ui.theme.NavBackStackEntryExampleTheme
 
@@ -97,7 +101,8 @@ private fun AppNavigation(modifier: Modifier = Modifier) {
 
             ScreenContent(
                 screenName = "Screen B",
-                onNavigateForward = { navController.navigate("screenC") }
+                onNavigateForward = { navController.navigate("screenC") },
+                onShowDialog = { navController.navigate("confirmDialog") }
             )
         }
 
@@ -106,8 +111,15 @@ private fun AppNavigation(modifier: Modifier = Modifier) {
 
             ScreenContent(
                 screenName = "Screen C",
-                onNavigateForward = null // Last screen, no forward navigation
+                onNavigateForward = null
             )
+        }
+
+        // Dialog is a FloatingWindow — the previous destination stays STARTED, not STOPPED
+        dialog("confirmDialog") { backStackEntry ->
+            ObserveBackStackLifecycle(backStackEntry, "Dialog")
+
+            DialogContent(onDismiss = { navController.popBackStack() })
         }
     }
 }
@@ -142,7 +154,8 @@ private fun ObserveBackStackLifecycle(backStackEntry: NavBackStackEntry, screenN
 @Composable
 private fun ScreenContent(
     screenName: String,
-    onNavigateForward: (() -> Unit)?
+    onNavigateForward: (() -> Unit)?,
+    onShowDialog: (() -> Unit)? = null
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -159,13 +172,41 @@ private fun ScreenContent(
 
         if (onNavigateForward != null) {
             Button(onClick = onNavigateForward) {
-                Text("Navigate Forward →")
+                Text("Navigate Forward")
             }
         } else {
             Text(
                 text = "Last screen. Press back to pop.",
                 style = MaterialTheme.typography.bodyLarge
             )
+        }
+
+        if (onShowDialog != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(onClick = onShowDialog) {
+                Text("Show Dialog")
+            }
+        }
+    }
+}
+
+@Composable
+private fun DialogContent(onDismiss: () -> Unit) {
+    Card(shape = RoundedCornerShape(16.dp)) {
+        Column(
+            modifier = Modifier.padding(24.dp).fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Dialog Destination", style = MaterialTheme.typography.headlineSmall)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Screen B stays STARTED (not STOPPED)\nbecause it's still visible behind this dialog.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onDismiss) {
+                Text("Dismiss")
+            }
         }
     }
 }
